@@ -31,7 +31,7 @@ const {
   setDailyDuoStatus,
   undoLastLoot
 } = require("./storage");
-const { formatDailyDuos, formatDate, formatGold, trimDiscord } = require("./format");
+const { formatDailyDuos, formatDate, formatGold, formatTime, trimDiscord } = require("./format");
 
 warnUnsupportedNode();
 requireEnv(["DISCORD_TOKEN"]);
