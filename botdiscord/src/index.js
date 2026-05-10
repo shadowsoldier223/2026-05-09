@@ -69,6 +69,19 @@ const necroluneDrops = [
   }
 ];
 
+const lootBosses = {
+  necrolune: {
+    label: "Necrolune",
+    bossName: "necrolune",
+    drops: necroluneDrops
+  },
+  nocturnia: {
+    label: "Nocturnia",
+    bossName: "nocturnia",
+    drops: null
+  }
+};
+
 const playerCharacters = [
   {
     owner: "Andre",
@@ -95,12 +108,16 @@ const playerCharacters = [
   }
 ];
 
-function getNecroluneDropByItem(itemName) {
+function getKnownDropByItem(itemName, drops) {
   const normalizedItem = normalizeLootText(itemName);
 
-  return necroluneDrops.find((drop) =>
+  return drops.find((drop) =>
     getDropAliases(drop).some((alias) => normalizeLootText(alias) === normalizedItem)
   ) ?? null;
+}
+
+function getNecroluneDropByItem(itemName) {
+  return getKnownDropByItem(itemName, necroluneDrops);
 }
 
 function createDuoPanelComponents() {
@@ -185,18 +202,18 @@ function createDuoPanelComponents() {
   ];
 }
 
-function createNecroluneDropComponents(position) {
+function createBossLootComponents(position) {
   return [
     new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
-        .setCustomId(`necrolune-drop:${position}`)
-        .setPlaceholder("Escolha o drop do Necrolune")
+        .setCustomId(`boss-loot:${position}`)
+        .setPlaceholder("Escolha o boss do loot")
         .addOptions(
-          {
-            label: "Colar loot",
-            description: "Cole a mensagem do reward chest",
-            value: "paste"
-          }
+          ...Object.entries(lootBosses).map(([value, boss]) => ({
+            label: boss.label,
+            description: `Colar loot do ${boss.label}`,
+            value
+          }))
         )
     )
   ];
@@ -256,14 +273,15 @@ function createClearLootsModal() {
     );
 }
 
-function createNecrolunePasteModal(position) {
+function createLootPasteModal(position, bossKey) {
   const duo = getDailyDuos()[position - 1];
   const leftName = duo?.left ?? `Jogador 1 do duo ${position}`;
   const rightName = duo?.right ?? `Jogador 2 do duo ${position}`;
+  const boss = lootBosses[bossKey] ?? lootBosses.necrolune;
 
   return new ModalBuilder()
-    .setCustomId(`necrolune-paste:${position}`)
-    .setTitle("Colar loot do Necrolune")
+    .setCustomId(`loot-paste:${bossKey}:${position}`)
+    .setTitle(`Colar loot do ${boss.label}`)
     .addComponents(
       new ActionRowBuilder().addComponents(
         createTextInput(
@@ -358,11 +376,25 @@ function getDropAliases(drop) {
   return aliases;
 }
 
-function parseNecroluneLootPaste(text) {
+function toGenericDrop(itemName) {
+  const cleanedItem = itemName
+    .replace(/^(a|an)\s+/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return {
+    id: normalizeLootText(cleanedItem),
+    item: cleanedItem,
+    category: "Loot"
+  };
+}
+
+function parseLootPaste(text, bossKey) {
   if (!text.trim()) {
     return [];
   }
 
+  const boss = lootBosses[bossKey] ?? lootBosses.necrolune;
   const marker = "available in your reward chest:";
   const lowerText = text.toLowerCase();
   const markerIndex = lowerText.indexOf(marker);
@@ -380,7 +412,9 @@ function parseNecroluneLootPaste(text) {
     const match = cleanedPart.match(/^(\d+)\s+(.+)$/);
     const quantity = match ? Number.parseInt(match[1], 10) : 1;
     const itemName = (match ? match[2] : cleanedPart).replace(/^(a|an)\s+/i, "");
-    const drop = getNecroluneDropByItem(itemName);
+    const drop = boss.drops
+      ? getKnownDropByItem(itemName, boss.drops)
+      : getKnownDropByItem(itemName, necroluneDrops) ?? toGenericDrop(itemName);
 
     if (!drop || !Number.isInteger(quantity) || quantity <= 0) {
       continue;
@@ -688,15 +722,16 @@ client.on("interactionCreate", async (interaction) => {
 
       const [kind, positionText] = interaction.customId.split(":");
 
-      if (kind !== "necrolune-drop") {
-        return;
-      }
-
       const position = parsePosition(positionText);
       const selectedDrop = interaction.values[0];
 
-      if (position && selectedDrop === "paste") {
-        await interaction.showModal(createNecrolunePasteModal(position));
+      if (kind === "boss-loot" && position && lootBosses[selectedDrop]) {
+        await interaction.showModal(createLootPasteModal(position, selectedDrop));
+        return;
+      }
+
+      if (kind === "necrolune-drop" && position && selectedDrop === "paste") {
+        await interaction.showModal(createLootPasteModal(position, "necrolune"));
         return;
       }
     } catch (error) {
@@ -728,10 +763,16 @@ client.on("interactionCreate", async (interaction) => {
         return;
       }
 
-      if (interaction.customId.startsWith("necrolune-paste:")) {
+      if (
+        interaction.customId.startsWith("loot-paste:") ||
+        interaction.customId.startsWith("necrolune-paste:")
+      ) {
         await interaction.deferReply();
 
-        const [, positionText] = interaction.customId.split(":");
+        const idParts = interaction.customId.split(":");
+        const bossKey = idParts[0] === "loot-paste" ? idParts[1] : "necrolune";
+        const positionText = idParts[0] === "loot-paste" ? idParts[2] : idParts[1];
+        const boss = lootBosses[bossKey] ?? lootBosses.necrolune;
         const position = parsePosition(positionText);
 
         if (!position) {
@@ -749,24 +790,24 @@ client.on("interactionCreate", async (interaction) => {
         const pastedLoots = [
           {
             player: duo?.left ?? `Jogador 1 do duo ${position}`,
-            drops: parseNecroluneLootPaste(leftLootText)
+            drops: parseLootPaste(leftLootText, bossKey)
           },
           {
             player: duo?.right ?? `Jogador 2 do duo ${position}`,
-            drops: parseNecroluneLootPaste(rightLootText)
+            drops: parseLootPaste(rightLootText, bossKey)
           }
         ].filter((entry) => entry.drops.length);
 
         if (!pastedLoots.length) {
           await interaction.editReply(
-            "Nao reconheci nenhum drop do Necrolune. Cole pelo menos um loot em uma das caixas."
+            `Nao reconheci nenhum drop do ${boss.label}. Cole pelo menos um loot em uma das caixas.`
           );
           return;
         }
 
         const saveResult = saveDuoLoot({
           position,
-          bossName: "necrolune",
+          bossName: boss.bossName,
           markedAt: lootTime,
           createdBy: interaction.user.tag,
           drops: pastedLoots.flatMap((pastedLoot) =>
@@ -782,7 +823,7 @@ client.on("interactionCreate", async (interaction) => {
 
         if (!saveResult) {
           await interaction.editReply(
-            "Nao consegui salvar os drops porque nao encontrei esse boss."
+            `Nao consegui salvar os drops porque nao encontrei o boss ${boss.label}.`
           );
           return;
         }
@@ -798,7 +839,7 @@ client.on("interactionCreate", async (interaction) => {
         await interaction.editReply(
           {
             content: trimDiscord(
-              `Drops salvos no Necrolune #${saveResult.boss.id}:\n${lines.join("\n")}` +
+              `Drops salvos no ${boss.label} #${saveResult.boss.id}:\n${lines.join("\n")}` +
                 `${saveResult.dailyDuos ? `\n\n${formatDailyDuos(saveResult.dailyDuos)}` : ""}` +
                 `\n\n${ownerTotals}`
             ),
@@ -864,7 +905,7 @@ client.on("interactionCreate", async (interaction) => {
       await interaction.editReply({
         content: trimDiscord(`${labels[action]}\n\n${formatDailyDuos(duos)}`),
         components: action === "done"
-          ? createNecroluneDropComponents(position)
+          ? createBossLootComponents(position)
           : createDuoPanelComponents()
       });
     } catch (error) {
@@ -1135,7 +1176,7 @@ client.on("interactionCreate", async (interaction) => {
         await interaction.reply({
           content: trimDiscord(`Duo ${position} ${label}. Cooldown de 20h iniciado.\n\n${formatDailyDuos(duos)}`),
           components: subcommand === "done"
-            ? createNecroluneDropComponents(position)
+            ? createBossLootComponents(position)
             : createDuoPanelComponents()
         });
         return;
