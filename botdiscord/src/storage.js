@@ -172,6 +172,11 @@ function saveDuoLoot({ position, bossId = null, bossName = null, drops, createdB
 
 function clearAllDrops() {
   const db = readDb();
+
+  if (db.drops.length) {
+    backupLoots(db, "before-clear-loots");
+  }
+
   db.drops = [];
   writeDb(db);
   return db.drops;

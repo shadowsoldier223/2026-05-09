@@ -4,6 +4,7 @@ const {
   ActionRowBuilder,
   Client,
   GatewayIntentBits,
+  MessageFlags,
   ModalBuilder,
   StringSelectMenuBuilder,
   TextInputBuilder,
@@ -288,7 +289,7 @@ function createNecrolunePasteModal(position) {
 function normalizeLootText(value) {
   return value
     .toLowerCase()
-    .replace(/['’]/g, "")
+    .replace(/['\u2019]/g, "")
     .replace(/\b(a|an)\b/g, " ")
     .replace(/[.,;:]/g, "")
     .replace(/\s+/g, " ")
@@ -571,6 +572,20 @@ function formatCooldownDuos() {
     .join("\n")}`;
 }
 
+async function sendPrivateError(interaction, content) {
+  const response = {
+    content,
+    flags: MessageFlags.Ephemeral
+  };
+
+  if (interaction.deferred || interaction.replied) {
+    await interaction.followUp(response).catch((error) => console.error(error));
+    return;
+  }
+
+  await interaction.reply(response).catch((error) => console.error(error));
+}
+
 process.once("exit", (code) => {
   console.log(`Processo encerrado com codigo ${code}.`);
 });
@@ -599,7 +614,7 @@ client.on("interactionCreate", async (interaction) => {
           await interaction.reply({
             content: trimDiscord(formatDailyDuos(getDailyDuos())),
             components: createDuoPanelComponents(),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -686,10 +701,7 @@ client.on("interactionCreate", async (interaction) => {
       }
     } catch (error) {
       console.error(error);
-      await interaction.reply({
-        content: "Deu erro ao escolher esse drop.",
-        ephemeral: true
-      }).catch((replyError) => console.error(replyError));
+      await sendPrivateError(interaction, "Deu erro ao escolher esse drop.");
     }
     return;
   }
@@ -857,10 +869,7 @@ client.on("interactionCreate", async (interaction) => {
       });
     } catch (error) {
       console.error(error);
-      await interaction.reply({
-        content: "Deu erro ao salvar esse formulario.",
-        ephemeral: true
-      }).catch((replyError) => console.error(replyError));
+      await sendPrivateError(interaction, "Deu erro ao salvar esse formulario.");
     }
     return;
   }
@@ -912,7 +921,7 @@ client.on("interactionCreate", async (interaction) => {
         if (!summary) {
           await interaction.reply({
             content: "Nao encontrei esse boss. Use `/boss lista` para ver os IDs.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -953,7 +962,7 @@ client.on("interactionCreate", async (interaction) => {
       if (!drop) {
         await interaction.reply({
           content: "Nao encontrei esse boss. Use `/boss lista` para ver os IDs.",
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
         return;
       }
@@ -1079,7 +1088,7 @@ client.on("interactionCreate", async (interaction) => {
         if (!duos) {
           await interaction.reply({
             content: "Nao encontrei esse numero na lista. Use `/duo lista ver` para conferir.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -1098,7 +1107,7 @@ client.on("interactionCreate", async (interaction) => {
         if (!duos) {
           await interaction.reply({
             content: "Nao encontrei esse numero na lista. Use `/duo lista ver` para conferir.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -1117,7 +1126,7 @@ client.on("interactionCreate", async (interaction) => {
         if (!duos) {
           await interaction.reply({
             content: "Nao encontrei esse numero na lista. Use `/duo lista ver` para conferir.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -1143,16 +1152,10 @@ client.on("interactionCreate", async (interaction) => {
     }
   } catch (error) {
     console.error(error);
-    const response = {
-      content: "Deu erro ao executar esse comando. Veja o log do bot para detalhes.",
-      ephemeral: true
-    };
-
-    if (interaction.deferred || interaction.replied) {
-      await interaction.followUp(response).catch((followUpError) => console.error(followUpError));
-    } else {
-      await interaction.reply(response).catch((replyError) => console.error(replyError));
-    }
+    await sendPrivateError(
+      interaction,
+      "Deu erro ao executar esse comando. Veja o log do bot para detalhes."
+    );
   }
 });
 
