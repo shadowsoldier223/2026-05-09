@@ -1,88 +1,177 @@
 {
-  "bosses": [
-    {
-      "id": 1,
-      "name": "necrolune",
-      "number": null,
-      "createdBy": "andreqe",
-      "createdAt": "2026-05-10T01:43:21.031Z"
-    }
-  ],
-  "drops": [],
-  "config": {
-    "duosChannelId": "1495506668933484764",
-    "lastDuosPostDate": null
-  },
-  "dailyDuos": [
-    {
-      "left": "Wanius Zack",
-      "right": "Magic Max",
-      "status": "done",
-      "markedAt": "2026-05-10T02:18:27.666Z",
-      "cooldownUntil": "2026-05-10T22:18:27.666Z"
-    },
-    {
-      "left": "Eligos",
-      "right": "Malvadinho",
-      "status": "done",
-      "markedAt": "2026-05-10T02:45:00.269Z",
-      "cooldownUntil": "2026-05-10T22:45:00.269Z"
-    },
-    {
-      "left": "Durg Tyre",
-      "right": "Billy Jhin",
-      "status": "done",
-      "markedAt": "2026-05-10T02:48:28.976Z",
-      "cooldownUntil": "2026-05-10T22:48:28.976Z"
-    },
-    {
-      "left": "Mr Ice",
-      "right": "Imfellel",
-      "status": null,
-      "markedAt": null,
-      "cooldownUntil": null
-    },
-    {
-      "left": "Brezzley",
-      "right": "Hunting",
-      "status": null,
-      "markedAt": null,
-      "cooldownUntil": null
-    },
-    {
-      "left": "Dente",
-      "right": "Mr ice",
-      "status": null,
-      "markedAt": null,
-      "cooldownUntil": null
-    },
-    {
-      "left": "Sodreh Indignado",
-      "right": "Ze Elite",
-      "status": null,
-      "markedAt": null,
-      "cooldownUntil": null
-    },
-    {
-      "left": "Jonas Rushful",
-      "right": "Hekate",
-      "status": null,
-      "markedAt": null,
-      "cooldownUntil": null
-    },
-    {
-      "left": "Doutor",
-      "right": "Nino Rox",
-      "status": null,
-      "markedAt": null,
-      "cooldownUntil": null
-    },
-    {
-      "left": "Larvae",
-      "right": "Dantas Ishigo",
-      "status": null,
-      "markedAt": null,
-      "cooldownUntil": null
-    }
-  ]
+    "bosses":  [
+                   {
+                       "id":  1,
+                       "name":  "necrolune",
+                       "number":  null,
+                       "createdBy":  "andreqe",
+                       "createdAt":  "2026-05-10T01:43:21.031Z"
+                   }
+               ],
+    "drops":  [
+                  {
+                      "id":  1,
+                      "bossId":  1,
+                      "player":  "Doutor",
+                      "item":  "silver token",
+                      "quantity":  3,
+                      "value":  0,
+                      "category":  "Comum",
+                      "createdBy":  "andreqe",
+                      "createdAt":  "2026-05-10T03:22:23.132Z"
+                  },
+                  {
+                      "id":  2,
+                      "bossId":  1,
+                      "player":  "Doutor",
+                      "item":  "nocturnia coin",
+                      "quantity":  3,
+                      "value":  0,
+                      "category":  "Comum",
+                      "createdBy":  "andreqe",
+                      "createdAt":  "2026-05-10T03:22:23.132Z"
+                  },
+                  {
+                      "id":  3,
+                      "bossId":  1,
+                      "player":  "Doutor",
+                      "item":  "crystal coins",
+                      "quantity":  21,
+                      "value":  0,
+                      "category":  "Comum",
+                      "createdBy":  "andreqe",
+                      "createdAt":  "2026-05-10T03:22:23.132Z"
+                  },
+                  {
+                      "id":  4,
+                      "bossId":  1,
+                      "player":  "Doutor",
+                      "item":  "gold token",
+                      "quantity":  4,
+                      "value":  0,
+                      "category":  "Comum",
+                      "createdBy":  "andreqe",
+                      "createdAt":  "2026-05-10T03:22:23.132Z"
+                  },
+                  {
+                      "id":  5,
+                      "bossId":  1,
+                      "player":  "Nino Rox",
+                      "item":  "silver token",
+                      "quantity":  3,
+                      "value":  0,
+                      "category":  "Comum",
+                      "createdBy":  "andreqe",
+                      "createdAt":  "2026-05-10T03:22:23.132Z"
+                  },
+                  {
+                      "id":  6,
+                      "bossId":  1,
+                      "player":  "Nino Rox",
+                      "item":  "nocturnia coin",
+                      "quantity":  3,
+                      "value":  0,
+                      "category":  "Comum",
+                      "createdBy":  "andreqe",
+                      "createdAt":  "2026-05-10T03:22:23.132Z"
+                  },
+                  {
+                      "id":  7,
+                      "bossId":  1,
+                      "player":  "Nino Rox",
+                      "item":  "crystal coins",
+                      "quantity":  21,
+                      "value":  0,
+                      "category":  "Comum",
+                      "createdBy":  "andreqe",
+                      "createdAt":  "2026-05-10T03:22:23.132Z"
+                  },
+                  {
+                      "id":  8,
+                      "bossId":  1,
+                      "player":  "Nino Rox",
+                      "item":  "gold token",
+                      "quantity":  4,
+                      "value":  0,
+                      "category":  "Comum",
+                      "createdBy":  "andreqe",
+                      "createdAt":  "2026-05-10T03:22:23.132Z"
+                  }
+              ],
+    "config":  {
+                   "duosChannelId":  "1495506668933484764",
+                   "lastDuosPostDate":  null
+               },
+    "dailyDuos":  [
+                      {
+                          "left":  "Wanius Zack",
+                          "right":  "Magic Max",
+                          "status":  "done",
+                          "markedAt":  "2026-05-10T02:18:27.666Z",
+                          "cooldownUntil":  "2026-05-10T22:18:27.666Z"
+                      },
+                      {
+                          "left":  "Eligos",
+                          "right":  "Malvadinho",
+                          "status":  "fail",
+                          "markedAt":  "2026-05-10T03:22:59.771Z",
+                          "cooldownUntil":  "2026-05-10T23:22:59.771Z"
+                      },
+                      {
+                          "left":  "Durg Tyre",
+                          "right":  "Billy Jhin",
+                          "status":  "done",
+                          "markedAt":  "2026-05-10T02:48:28.976Z",
+                          "cooldownUntil":  "2026-05-10T22:48:28.976Z"
+                      },
+                      {
+                          "left":  "Mr Ice",
+                          "right":  "Imfellel",
+                          "status":  null,
+                          "markedAt":  null,
+                          "cooldownUntil":  null
+                      },
+                      {
+                          "left":  "Brezzley",
+                          "right":  "Hunting",
+                          "status":  null,
+                          "markedAt":  null,
+                          "cooldownUntil":  null
+                      },
+                      {
+                          "left":  "Dente",
+                          "right":  "Mr ice",
+                          "status":  null,
+                          "markedAt":  null,
+                          "cooldownUntil":  null
+                      },
+                      {
+                          "left":  "Sodreh Indignado",
+                          "right":  "Ze Elite",
+                          "status":  null,
+                          "markedAt":  null,
+                          "cooldownUntil":  null
+                      },
+                      {
+                          "left":  "Jonas Rushful",
+                          "right":  "Hekate",
+                          "status":  null,
+                          "markedAt":  null,
+                          "cooldownUntil":  null
+                      },
+                      {
+                          "left":  "Doutor",
+                          "right":  "Nino Rox",
+                          "status":  "done",
+                          "markedAt":  "2026-05-10T03:21:00.000Z",
+                          "cooldownUntil":  "2026-05-10T23:21:00.000Z"
+                      },
+                      {
+                          "left":  "Larvae",
+                          "right":  "Dantas Ishigo",
+                          "status":  null,
+                          "markedAt":  null,
+                          "cooldownUntil":  null
+                      }
+                  ]
 }
