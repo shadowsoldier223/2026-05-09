@@ -42,7 +42,7 @@ const necroluneDrops = [
   { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
   { id: "gold-token", item: "gold token", category: "Comum", aliases: ["gold tokens"] },
   { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
-  { id: "mystic-mag", item: "mystic mag", category: "Semi-raro", aliases: ["mystic mags"] },
+  { id: "mystic-bag", item: "mystic bag", category: "Semi-raro", aliases: ["mystic bags"] },
   { id: "mini-obelisk", item: "mini obelisk", category: "Semi-raro", aliases: ["mini obelisks"] },
   { id: "serene-backpack", item: "serene backpack", category: "Raro", aliases: ["serene backpacks"] },
   {
