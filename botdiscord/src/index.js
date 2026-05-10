@@ -69,16 +69,68 @@ const necroluneDrops = [
   }
 ];
 
+const nocturniaHalfMoonDrops = [
+  { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
+  { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
+  { id: "gold-token", item: "gold token", category: "Comum", aliases: ["gold tokens"] },
+  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
+  {
+    id: "powerful-cloud-fabric-scroll",
+    item: "Powerful Cloud Fabric Scroll",
+    category: "Semi-raro",
+    aliases: ["Powerful Cloud Fabric Scrolls"]
+  },
+  {
+    id: "powerful-electrify-scroll",
+    item: "Powerful Electrify Scroll",
+    category: "Semi-raro",
+    aliases: ["Powerful Electrify Scrolls"]
+  },
+  {
+    id: "extended-promotion-scroll",
+    item: "Extended Promotion Scroll",
+    category: "Semi-raro",
+    aliases: ["Extended Promotion Scrolls"]
+  },
+  { id: "roulette-coin", item: "Roulette Coin", category: "Semi-raro", aliases: ["Roulette Coins"] },
+  {
+    id: "03-birthday-cupcake",
+    item: "03's birthday cupcake",
+    category: "Raro",
+    aliases: ["03s birthday cupcake", "03 birthday cupcake"]
+  },
+  {
+    id: "03-birthday-cake",
+    item: "03's birthday cake",
+    category: "Raro",
+    aliases: ["03s birthday cake", "03 birthday cake"]
+  },
+  {
+    id: "boosted-exercise-present",
+    item: "Boosted Exercise Present",
+    category: "Raro",
+    aliases: ["Boosted Exercise Presents"]
+  },
+  { id: "merciless-backpack", item: "Merciless Backpack", category: "Muito raro", aliases: ["Merciless Backpacks"] },
+  { id: "eclypse-catalyst", item: "Eclypse Catalyst", category: "Muito raro", aliases: ["Eclipse Catalyst", "Eclypse Catalysts"] },
+  {
+    id: "unlit-crescent-crystal",
+    item: "Unlit Crescent Crystal",
+    category: "Muito raro",
+    aliases: ["Unlit Crescent Crystals"]
+  }
+];
+
 const lootBosses = {
   necrolune: {
     label: "Necrolune",
     bossName: "necrolune",
     drops: necroluneDrops
   },
-  nocturnia: {
-    label: "Nocturnia",
+  nocturniaHalfMoon: {
+    label: "Nocturnia - Half Moon",
     bossName: "nocturnia",
-    drops: null
+    drops: nocturniaHalfMoonDrops
   }
 };
 
@@ -116,8 +168,20 @@ function getKnownDropByItem(itemName, drops) {
   ) ?? null;
 }
 
-function getNecroluneDropByItem(itemName) {
-  return getKnownDropByItem(itemName, necroluneDrops);
+function getKnownLootDropByItem(itemName) {
+  for (const boss of Object.values(lootBosses)) {
+    if (!boss.drops) {
+      continue;
+    }
+
+    const drop = getKnownDropByItem(itemName, boss.drops);
+
+    if (drop) {
+      return drop;
+    }
+  }
+
+  return null;
 }
 
 function createDuoPanelComponents() {
@@ -414,7 +478,7 @@ function parseLootPaste(text, bossKey) {
     const itemName = (match ? match[2] : cleanedPart).replace(/^(a|an)\s+/i, "");
     const drop = boss.drops
       ? getKnownDropByItem(itemName, boss.drops)
-      : getKnownDropByItem(itemName, necroluneDrops) ?? toGenericDrop(itemName);
+      : getKnownLootDropByItem(itemName) ?? toGenericDrop(itemName);
 
     if (!drop || !Number.isInteger(quantity) || quantity <= 0) {
       continue;
@@ -525,7 +589,7 @@ function formatAllOwnerLootTotals() {
 }
 
 function formatItemLootStats(itemName) {
-  const drop = getNecroluneDropByItem(itemName);
+  const drop = getKnownLootDropByItem(itemName);
   const stats = getItemLootStats(drop?.item ?? itemName);
 
   if (!stats.total) {
