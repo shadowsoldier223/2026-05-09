@@ -245,6 +245,7 @@ function createNecrolunePasteModal(position) {
 function normalizeLootText(value) {
   return value
     .toLowerCase()
+    .replace(/\b(a|an)\b/g, " ")
     .replace(/[.,;:]/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -300,6 +301,10 @@ function getEarliestDate(dates) {
 function getDropAliases(item) {
   const aliases = [item];
 
+  if (item.endsWith("s")) {
+    aliases.push(item.slice(0, -1));
+  }
+
   if (item.endsWith(" token") || item.endsWith(" coin")) {
     aliases.push(`${item}s`);
   }
@@ -320,7 +325,7 @@ function parseNecroluneLootPaste(text) {
     : text.slice(text.lastIndexOf(":") + 1);
   const totals = new Map();
   const parts = lootText
-    .split(/,|\s+and\s+/i)
+    .split(/,|\s+and\s+|\s+e\s+/i)
     .map((part) => part.trim())
     .filter(Boolean);
 
