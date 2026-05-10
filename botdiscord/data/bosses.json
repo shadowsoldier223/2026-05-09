@@ -1,0 +1,88 @@
+{
+  "bosses": [
+    {
+      "id": 1,
+      "name": "necrolune",
+      "number": null,
+      "createdBy": "andreqe",
+      "createdAt": "2026-05-10T01:43:21.031Z"
+    }
+  ],
+  "drops": [],
+  "config": {
+    "duosChannelId": "1495506668933484764",
+    "lastDuosPostDate": null
+  },
+  "dailyDuos": [
+    {
+      "left": "Wanius Zack",
+      "right": "Magic Max",
+      "status": "done",
+      "markedAt": "2026-05-10T02:18:27.666Z",
+      "cooldownUntil": "2026-05-10T22:18:27.666Z"
+    },
+    {
+      "left": "Eligos",
+      "right": "Malvadinho",
+      "status": "done",
+      "markedAt": "2026-05-10T02:45:00.269Z",
+      "cooldownUntil": "2026-05-10T22:45:00.269Z"
+    },
+    {
+      "left": "Durg Tyre",
+      "right": "Billy Jhin",
+      "status": "done",
+      "markedAt": "2026-05-10T02:48:28.976Z",
+      "cooldownUntil": "2026-05-10T22:48:28.976Z"
+    },
+    {
+      "left": "Mr Ice",
+      "right": "Imfellel",
+      "status": null,
+      "markedAt": null,
+      "cooldownUntil": null
+    },
+    {
+      "left": "Brezzley",
+      "right": "Hunting",
+      "status": null,
+      "markedAt": null,
+      "cooldownUntil": null
+    },
+    {
+      "left": "Dente",
+      "right": "Mr ice",
+      "status": null,
+      "markedAt": null,
+      "cooldownUntil": null
+    },
+    {
+      "left": "Sodreh Indignado",
+      "right": "Ze Elite",
+      "status": null,
+      "markedAt": null,
+      "cooldownUntil": null
+    },
+    {
+      "left": "Jonas Rushful",
+      "right": "Hekate",
+      "status": null,
+      "markedAt": null,
+      "cooldownUntil": null
+    },
+    {
+      "left": "Doutor",
+      "right": "Nino Rox",
+      "status": null,
+      "markedAt": null,
+      "cooldownUntil": null
+    },
+    {
+      "left": "Larvae",
+      "right": "Dantas Ishigo",
+      "status": null,
+      "markedAt": null,
+      "cooldownUntil": null
+    }
+  ]
+}
