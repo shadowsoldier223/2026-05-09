@@ -150,6 +150,11 @@ function createDuoPanelComponents() {
             label: "Limpar todos os loots",
             description: "Apaga todos os drops salvos",
             value: "clear-loots"
+          },
+          {
+            label: "Ver total de loots",
+            description: "Mostra o total geral por dono",
+            value: "loot-total"
           }
         )
     )
@@ -455,6 +460,12 @@ function formatAllTimeLootTotalsByOwner(characters) {
   return lines.join("\n");
 }
 
+function formatAllOwnerLootTotals() {
+  return formatAllTimeLootTotalsByOwner(
+    playerCharacters.flatMap((group) => group.characters)
+  );
+}
+
 process.once("exit", (code) => {
   console.log(`Processo encerrado com codigo ${code}.`);
 });
@@ -508,6 +519,14 @@ client.on("interactionCreate", async (interaction) => {
 
         if (action === "clear-loots") {
           await interaction.showModal(createClearLootsModal());
+          return;
+        }
+
+        if (action === "loot-total") {
+          await interaction.reply({
+            content: trimDiscord(formatAllOwnerLootTotals()),
+            components: createDuoPanelComponents()
+          });
           return;
         }
 
