@@ -81,6 +81,16 @@ function nextId(items) {
   return items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
 }
 
+function findBoss(db, { bossId = null, bossName = null }) {
+  const normalizedBossName = bossName?.toLowerCase() ?? null;
+
+  return bossId
+    ? db.bosses.find((entry) => entry.id === bossId)
+    : db.bosses
+        .filter((entry) => entry.name.toLowerCase() === normalizedBossName)
+        .sort((a, b) => b.id - a.id)[0];
+}
+
 function createBoss({ name, number, createdBy }) {
   const db = readDb();
   const boss = {
@@ -124,12 +134,7 @@ function addDrop({ bossId, player, item, quantity, value, category, createdBy })
 
 function saveDuoLoot({ position, bossId = null, bossName = null, drops, createdBy, markedAt = null }) {
   const db = readDb();
-  const normalizedBossName = bossName?.toLowerCase() ?? null;
-  const boss = bossId
-    ? db.bosses.find((entry) => entry.id === bossId)
-    : db.bosses
-        .filter((entry) => entry.name.toLowerCase() === normalizedBossName)
-        .sort((a, b) => b.id - a.id)[0];
+  const boss = findBoss(db, { bossId, bossName });
 
   if (!boss) {
     return null;
@@ -168,6 +173,34 @@ function saveDuoLoot({ position, bossId = null, bossName = null, drops, createdB
   backupLoots(db, "duo-loot");
   writeDb(db);
   return { boss, dailyDuos, drops: savedDrops };
+}
+
+function saveBossLoot({ bossId = null, bossName = null, drops, createdBy }) {
+  const db = readDb();
+  const boss = findBoss(db, { bossId, bossName });
+
+  if (!boss) {
+    return null;
+  }
+
+  let dropId = nextId(db.drops);
+  const createdAt = new Date().toISOString();
+  const savedDrops = drops.map((drop) => ({
+    id: dropId++,
+    bossId: boss.id,
+    player: drop.player,
+    item: drop.item,
+    quantity: drop.quantity,
+    value: drop.value ?? 0,
+    category: drop.category,
+    createdBy,
+    createdAt
+  }));
+
+  db.drops.push(...savedDrops);
+  backupLoots(db, "boss-loot");
+  writeDb(db);
+  return { boss, drops: savedDrops };
 }
 
 function clearAllDrops() {
@@ -434,6 +467,7 @@ module.exports = {
   listBosses,
   removeDailyDuo,
   resetDailyDuos,
+  saveBossLoot,
   saveDuoLoot,
   setDailyDuoStatus,
   undoLastLoot

@@ -159,21 +159,25 @@ const lootBosses = {
   necrolune: {
     label: "Necrolune",
     bossName: "necrolune",
+    mode: "duo",
     drops: necroluneDrops
   },
   nocturniaCrescentMoon: {
     label: "Nocturnia - Crescent Moon",
     bossName: "nocturnia",
+    mode: "solo",
     drops: nocturniaCrescentMoonDrops
   },
   nocturniaHalfMoon: {
     label: "Nocturnia - Half Moon",
     bossName: "nocturnia",
+    mode: "solo",
     drops: nocturniaHalfMoonDrops
   },
   nocturniaFullMoon: {
     label: "Nocturnia - Full Moon",
     bossName: "nocturnia",
+    mode: "solo",
     drops: nocturniaFullMoonDrops
   }
 };
@@ -243,7 +247,8 @@ function getLootBoss(bossKey) {
 function listLootBosses() {
   return Object.entries(lootBosses).map(([key, boss]) => ({
     key,
-    label: boss.label
+    label: boss.label,
+    mode: boss.mode
   }));
 }
 
@@ -270,7 +275,9 @@ function parseLootPaste(text, bossKey) {
     const match = cleanedPart.match(/^(\d+)\s+(.+)$/);
     const quantity = match ? Number.parseInt(match[1], 10) : 1;
     const itemName = (match ? match[2] : cleanedPart).replace(/^(a|an)\s+/i, "");
-    const lootDrop = getKnownDropByItem(itemName, boss.drops) ?? toGenericDrop(itemName);
+    const lootDrop = getKnownDropByItem(itemName, boss.drops) ??
+      getKnownLootDropByItem(itemName) ??
+      toGenericDrop(itemName);
 
     if (!Number.isInteger(quantity) || quantity <= 0) {
       continue;

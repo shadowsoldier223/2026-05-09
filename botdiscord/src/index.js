@@ -28,6 +28,7 @@ const {
   listBosses,
   removeDailyDuo,
   resetDailyDuos,
+  saveBossLoot,
   saveDuoLoot,
   setDailyDuoStatus,
   undoLastLoot
@@ -97,7 +98,7 @@ function createDuoPanelComponents() {
           },
           {
             label: "Marcar OK",
-            description: "Marca como concluido e abre os drops",
+            description: "Escolhe o boss e abre os drops",
             value: "done"
           },
           {
@@ -151,15 +152,34 @@ function createDuoPanelComponents() {
 }
 
 function createBossLootComponents(position) {
+  const duoBosses = listLootBosses().filter((boss) => boss.mode === "duo");
+
   return [
     new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId(`boss-loot:${position}`)
         .setPlaceholder("Escolha o boss do loot")
         .addOptions(
-          ...listLootBosses().map((boss) => ({
+          ...duoBosses.map((boss) => ({
             label: boss.label,
             description: `Colar loot do ${boss.label}`,
+            value: boss.key
+          }))
+        )
+    )
+  ];
+}
+
+function createDoneBossComponents() {
+  return [
+    new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId("done-boss")
+        .setPlaceholder("Escolha o boss")
+        .addOptions(
+          ...listLootBosses().map((boss) => ({
+            label: boss.label,
+            description: boss.mode === "solo" ? "Salvar loot solo" : "Marcar duo e salvar loot",
             value: boss.key
           }))
         )
@@ -176,7 +196,7 @@ function createTextInput(id, label, placeholder, required = true, style = TextIn
     .setRequired(required);
 }
 
-function createDuoModal(action) {
+function createDuoModal(action, bossKey = null) {
   const titles = {
     add: "Adicionar duo",
     edit: "Editar duo",
@@ -185,7 +205,7 @@ function createDuoModal(action) {
     fail: "Marcar fail"
   };
   const modal = new ModalBuilder()
-    .setCustomId(`duo-modal:${action}`)
+    .setCustomId(bossKey ? `duo-modal:${action}:${bossKey}` : `duo-modal:${action}`)
     .setTitle(titles[action]);
 
   if (action === "add") {
@@ -245,6 +265,40 @@ function createLootPasteModal(position, bossKey) {
           "lootRight",
           `Loot ${rightName}`.slice(0, 45),
           "Cole aqui o loot do segundo jogador",
+          false,
+          TextInputStyle.Paragraph
+        )
+      )
+    );
+}
+
+function createSoloLootPasteModal(bossKey) {
+  const boss = getLootBoss(bossKey) ?? getLootBoss("necrolune");
+
+  return new ModalBuilder()
+    .setCustomId(`solo-loot-paste:${bossKey}`)
+    .setTitle(`Loot solo do ${boss.label}`)
+    .addComponents(
+      new ActionRowBuilder().addComponents(
+        createTextInput("char1", "Char principal", "Wanius Zack")
+      ),
+      new ActionRowBuilder().addComponents(
+        createTextInput(
+          "loot1",
+          "Loot do char principal",
+          "Cole a mensagem do reward chest",
+          true,
+          TextInputStyle.Paragraph
+        )
+      ),
+      new ActionRowBuilder().addComponents(
+        createTextInput("char2", "Outro char no boss", "Magic Max", false)
+      ),
+      new ActionRowBuilder().addComponents(
+        createTextInput(
+          "loot2",
+          "Loot do outro char",
+          "Cole aqui se tiver outro char no boss",
           false,
           TextInputStyle.Paragraph
         )
@@ -586,7 +640,36 @@ client.on("interactionCreate", async (interaction) => {
           return;
         }
 
+        if (action === "done") {
+          await interaction.reply({
+            content: "Escolha qual boss voce fez:",
+            components: createDoneBossComponents()
+          });
+          return;
+        }
+
         await interaction.showModal(createDuoModal(action));
+        return;
+      }
+
+      if (interaction.customId === "done-boss") {
+        const selectedBossKey = interaction.values[0];
+        const selectedBoss = getLootBoss(selectedBossKey);
+
+        if (!selectedBoss) {
+          await interaction.reply({
+            content: "Nao encontrei esse boss.",
+            flags: MessageFlags.Ephemeral
+          });
+          return;
+        }
+
+        if (selectedBoss.mode === "solo") {
+          await interaction.showModal(createSoloLootPasteModal(selectedBossKey));
+          return;
+        }
+
+        await interaction.showModal(createDuoModal("done", selectedBossKey));
         return;
       }
 
@@ -597,6 +680,11 @@ client.on("interactionCreate", async (interaction) => {
       const selectedBoss = getLootBoss(selectedDrop);
 
       if (kind === "boss-loot" && position && selectedBoss) {
+        if (selectedBoss.mode === "solo") {
+          await interaction.showModal(createSoloLootPasteModal(selectedDrop));
+          return;
+        }
+
         await interaction.showModal(createLootPasteModal(position, selectedDrop));
         return;
       }
@@ -629,6 +717,80 @@ client.on("interactionCreate", async (interaction) => {
         clearAllDrops();
         await interaction.editReply({
           content: "Todos os loots foram apagados. Bosses e lista de duos foram mantidos.",
+          components: createDuoPanelComponents()
+        });
+        return;
+      }
+
+      if (interaction.customId.startsWith("solo-loot-paste:")) {
+        await interaction.deferReply();
+
+        const [, bossKey] = interaction.customId.split(":");
+        const boss = getLootBoss(bossKey) ?? getLootBoss("necrolune");
+        const char1 = interaction.fields.getTextInputValue("char1").trim();
+        const loot1Text = interaction.fields.getTextInputValue("loot1");
+        const char2 = interaction.fields.getTextInputValue("char2").trim();
+        const loot2Text = interaction.fields.getTextInputValue("loot2");
+
+        if ((char2 && !loot2Text.trim()) || (!char2 && loot2Text.trim())) {
+          await interaction.editReply("Para adicionar outro char, preencha o nome e o loot dele.");
+          return;
+        }
+
+        const pastedLoots = [
+          {
+            player: char1,
+            drops: parseLootPaste(loot1Text, bossKey)
+          },
+          ...(char2
+            ? [{
+                player: char2,
+                drops: parseLootPaste(loot2Text, bossKey)
+              }]
+            : [])
+        ].filter((entry) => entry.drops.length);
+
+        if (!pastedLoots.length) {
+          await interaction.editReply(
+            `Nao reconheci nenhum drop do ${boss.label}. Cole pelo menos um loot.`
+          );
+          return;
+        }
+
+        const saveResult = saveBossLoot({
+          bossName: boss.bossName,
+          createdBy: interaction.user.tag,
+          drops: pastedLoots.flatMap((pastedLoot) =>
+            pastedLoot.drops.map(({ drop, quantity }) => ({
+              player: pastedLoot.player,
+              item: drop.item,
+              quantity,
+              value: 0,
+              category: drop.category
+            }))
+          )
+        });
+
+        if (!saveResult) {
+          await interaction.editReply(
+            `Nao consegui salvar os drops porque nao encontrei o boss ${boss.label}.`
+          );
+          return;
+        }
+
+        const lines = pastedLoots.flatMap((pastedLoot) => [
+          `**${pastedLoot.player}**`,
+          ...pastedLoot.drops.map(({ drop, quantity }) => `- ${quantity}x ${drop.item}`)
+        ]);
+        const ownerTotals = formatAllTimeLootTotalsByOwner(
+          pastedLoots.map((pastedLoot) => pastedLoot.player)
+        );
+
+        await interaction.editReply({
+          content: trimDiscord(
+            `Drops salvos no ${boss.label} #${saveResult.boss.id}:\n${lines.join("\n")}` +
+              `\n\n${ownerTotals}`
+          ),
           components: createDuoPanelComponents()
         });
         return;
