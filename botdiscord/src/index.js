@@ -33,6 +33,7 @@ const {
   undoLastLoot
 } = require("./storage");
 const { formatDailyDuos, formatDate, formatGold, formatTime, trimDiscord } = require("./format");
+const { getKnownLootDropByItem, getLootBoss, listLootBosses, parseLootPaste } = require("./loot");
 
 warnUnsupportedNode();
 requireEnv(["DISCORD_TOKEN"]);
@@ -40,207 +41,6 @@ requireEnv(["DISCORD_TOKEN"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
-
-const necroluneDrops = [
-  { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
-  { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
-  { id: "gold-token", item: "gold token", category: "Comum", aliases: ["gold tokens"] },
-  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
-  { id: "mystic-bag", item: "mystic bag", category: "Semi-raro", aliases: ["mystic bags"] },
-  { id: "mini-obelisk", item: "mini obelisk", category: "Semi-raro", aliases: ["mini obelisks"] },
-  { id: "serene-backpack", item: "serene backpack", category: "Raro", aliases: ["serene backpacks"] },
-  {
-    id: "plushie-of-necrolune",
-    item: "plushie of necrolune",
-    category: "Raro",
-    aliases: ["plushie of a Necrolune", "plushie of Necrolune"]
-  },
-  {
-    id: "03-birthday-cupcake",
-    item: "03's birthday cupcake",
-    category: "Raro",
-    aliases: ["03s birthday cupcake", "03 birthday cupcake"]
-  },
-  {
-    id: "eclipse-infusion-core",
-    item: "Eclipse Infusion Core",
-    category: "Muito raro",
-    aliases: ["Eclipse Infusion Cores"]
-  }
-];
-
-const nocturniaCrescentMoonDrops = [
-  { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
-  { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
-  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
-  {
-    id: "powerful-cloud-fabric-scroll",
-    item: "Powerful Cloud Fabric Scroll",
-    category: "Semi-raro",
-    aliases: ["Powerful Cloud Fabric Scrolls"]
-  },
-  {
-    id: "powerful-electrify-scroll",
-    item: "Powerful Electrify Scroll",
-    category: "Semi-raro",
-    aliases: ["Powerful Electrify Scrolls"]
-  },
-  { id: "roulette-coin", item: "Roulette Coin", category: "Semi-raro", aliases: ["Roulette Coins"] },
-  {
-    id: "03-birthday-cupcake",
-    item: "03's birthday cupcake",
-    category: "Raro",
-    aliases: ["03s birthday cupcake", "03 birthday cupcake"]
-  },
-  {
-    id: "boosted-exercise-present",
-    item: "Boosted Exercise Present",
-    category: "Raro",
-    aliases: ["Boosted Exercise Presents"]
-  },
-  {
-    id: "03-birthday-cake",
-    item: "03's birthday cake",
-    category: "Muito raro",
-    aliases: ["03s birthday cake", "03 birthday cake"]
-  }
-];
-
-const nocturniaHalfMoonDrops = [
-  { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
-  { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
-  { id: "gold-token", item: "gold token", category: "Comum", aliases: ["gold tokens"] },
-  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
-  {
-    id: "powerful-cloud-fabric-scroll",
-    item: "Powerful Cloud Fabric Scroll",
-    category: "Semi-raro",
-    aliases: ["Powerful Cloud Fabric Scrolls"]
-  },
-  {
-    id: "powerful-electrify-scroll",
-    item: "Powerful Electrify Scroll",
-    category: "Semi-raro",
-    aliases: ["Powerful Electrify Scrolls"]
-  },
-  {
-    id: "extended-promotion-scroll",
-    item: "Extended Promotion Scroll",
-    category: "Semi-raro",
-    aliases: ["Extended Promotion Scrolls"]
-  },
-  { id: "roulette-coin", item: "Roulette Coin", category: "Semi-raro", aliases: ["Roulette Coins"] },
-  {
-    id: "03-birthday-cupcake",
-    item: "03's birthday cupcake",
-    category: "Raro",
-    aliases: ["03s birthday cupcake", "03 birthday cupcake"]
-  },
-  {
-    id: "03-birthday-cake",
-    item: "03's birthday cake",
-    category: "Raro",
-    aliases: ["03s birthday cake", "03 birthday cake"]
-  },
-  {
-    id: "boosted-exercise-present",
-    item: "Boosted Exercise Present",
-    category: "Raro",
-    aliases: ["Boosted Exercise Presents"]
-  },
-  { id: "merciless-backpack", item: "Merciless Backpack", category: "Muito raro", aliases: ["Merciless Backpacks"] },
-  { id: "eclipse-catalyst", item: "Eclipse Catalyst", category: "Muito raro", aliases: ["Eclypse Catalyst", "Eclypse Catalysts"] },
-  {
-    id: "unlit-crescent-crystal",
-    item: "Unlit Crescent Crystal",
-    category: "Muito raro",
-    aliases: ["Unlit Crescent Crystals"]
-  }
-];
-
-const nocturniaFullMoonDrops = [
-  { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
-  { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
-  { id: "gold-token", item: "gold token", category: "Comum", aliases: ["gold tokens"] },
-  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
-  {
-    id: "powerful-cloud-fabric-scroll",
-    item: "Powerful Cloud Fabric Scroll",
-    category: "Semi-raro",
-    aliases: ["Powerful Cloud Fabric Scrolls"]
-  },
-  {
-    id: "powerful-electrify-scroll",
-    item: "Powerful Electrify Scroll",
-    category: "Semi-raro",
-    aliases: ["Powerful Electrify Scrolls"]
-  },
-  {
-    id: "advanced-promotion-scroll",
-    item: "Advanced Promotion Scroll",
-    category: "Semi-raro",
-    aliases: ["Advanced Promotion Scrolls"]
-  },
-  { id: "roulette-coin", item: "Roulette Coin", category: "Semi-raro", aliases: ["Roulette Coins"] },
-  {
-    id: "boosted-exercise-present",
-    item: "Boosted Exercise Present",
-    category: "Semi-raro",
-    aliases: ["Boosted Exercise Presents"]
-  },
-  {
-    id: "03-birthday-cupcake",
-    item: "03's birthday cupcake",
-    category: "Raro",
-    aliases: ["03s birthday cupcake", "03 birthday cupcake"]
-  },
-  {
-    id: "03-birthday-cake",
-    item: "03's birthday cake",
-    category: "Raro",
-    aliases: ["03s birthday cake", "03 birthday cake"]
-  },
-  { id: "mini-obelisk", item: "mini obelisk", category: "Raro", aliases: ["mini obelisks"] },
-  { id: "stone-of-ascension", item: "Stone of Ascension", category: "Raro", aliases: ["Stones of Ascension"] },
-  { id: "soul-core-bag", item: "Soul Core Bag", category: "Raro", aliases: ["Soul Core Bags"] },
-  { id: "merciless-backpack", item: "Merciless Backpack", category: "Muito raro", aliases: ["Merciless Backpacks"] },
-  { id: "eclipse-catalyst", item: "Eclipse Catalyst", category: "Muito raro", aliases: ["Eclypse Catalyst", "Eclypse Catalysts"] },
-  {
-    id: "unlit-crescent-crystal",
-    item: "Unlit Crescent Crystal",
-    category: "Muito raro",
-    aliases: ["Unlit Crescent Crystals"]
-  },
-  {
-    id: "23-nocturnia-rubini",
-    item: "#23 Nocturnia Rubini",
-    category: "Unico",
-    aliases: ["23 Nocturnia Rubini", "Nocturnia Rubini"]
-  }
-];
-
-const lootBosses = {
-  necrolune: {
-    label: "Necrolune",
-    bossName: "necrolune",
-    drops: necroluneDrops
-  },
-  nocturniaCrescentMoon: {
-    label: "Nocturnia - Crescent Moon",
-    bossName: "nocturnia",
-    drops: nocturniaCrescentMoonDrops
-  },
-  nocturniaHalfMoon: {
-    label: "Nocturnia - Half Moon",
-    bossName: "nocturnia",
-    drops: nocturniaHalfMoonDrops
-  },
-  nocturniaFullMoon: {
-    label: "Nocturnia - Full Moon",
-    bossName: "nocturnia",
-    drops: nocturniaFullMoonDrops
-  }
-};
 
 const playerCharacters = [
   {
@@ -267,30 +67,6 @@ const playerCharacters = [
     ]
   }
 ];
-
-function getKnownDropByItem(itemName, drops) {
-  const normalizedItem = normalizeLootText(itemName);
-
-  return drops.find((drop) =>
-    getDropAliases(drop).some((alias) => normalizeLootText(alias) === normalizedItem)
-  ) ?? null;
-}
-
-function getKnownLootDropByItem(itemName) {
-  for (const boss of Object.values(lootBosses)) {
-    if (!boss.drops) {
-      continue;
-    }
-
-    const drop = getKnownDropByItem(itemName, boss.drops);
-
-    if (drop) {
-      return drop;
-    }
-  }
-
-  return null;
-}
 
 function createDuoPanelComponents() {
   return [
@@ -381,10 +157,10 @@ function createBossLootComponents(position) {
         .setCustomId(`boss-loot:${position}`)
         .setPlaceholder("Escolha o boss do loot")
         .addOptions(
-          ...Object.entries(lootBosses).map(([value, boss]) => ({
+          ...listLootBosses().map((boss) => ({
             label: boss.label,
             description: `Colar loot do ${boss.label}`,
-            value
+            value: boss.key
           }))
         )
     )
@@ -449,7 +225,7 @@ function createLootPasteModal(position, bossKey) {
   const duo = getDailyDuos()[position - 1];
   const leftName = duo?.left ?? `Jogador 1 do duo ${position}`;
   const rightName = duo?.right ?? `Jogador 2 do duo ${position}`;
-  const boss = lootBosses[bossKey] ?? lootBosses.necrolune;
+  const boss = getLootBoss(bossKey) ?? getLootBoss("necrolune");
 
   return new ModalBuilder()
     .setCustomId(`loot-paste:${bossKey}:${position}`)
@@ -474,16 +250,6 @@ function createLootPasteModal(position, bossKey) {
         )
       )
     );
-}
-
-function normalizeLootText(value) {
-  return value
-    .toLowerCase()
-    .replace(/['\u2019]/g, "")
-    .replace(/\b(a|an)\b/g, " ")
-    .replace(/[.,;:]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function normalizeCharacterName(value) {
@@ -531,74 +297,6 @@ function getEarliestDate(dates) {
   return validDates.reduce((earliest, date) =>
     date.getTime() < earliest.getTime() ? date : earliest
   );
-}
-
-function getDropAliases(drop) {
-  const item = drop.item;
-  const aliases = [item, ...(drop.aliases ?? [])];
-
-  if (item.endsWith("s")) {
-    aliases.push(item.slice(0, -1));
-  }
-
-  if (!item.endsWith("s")) {
-    aliases.push(`${item}s`);
-  }
-
-  return aliases;
-}
-
-function toGenericDrop(itemName) {
-  const cleanedItem = itemName
-    .replace(/^(a|an)\s+/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return {
-    id: normalizeLootText(cleanedItem),
-    item: cleanedItem,
-    category: "Loot"
-  };
-}
-
-function parseLootPaste(text, bossKey) {
-  if (!text.trim()) {
-    return [];
-  }
-
-  const boss = lootBosses[bossKey] ?? lootBosses.necrolune;
-  const marker = "available in your reward chest:";
-  const lowerText = text.toLowerCase();
-  const markerIndex = lowerText.indexOf(marker);
-  const lootText = markerIndex >= 0
-    ? text.slice(markerIndex + marker.length)
-    : text.slice(text.lastIndexOf(":") + 1);
-  const totals = new Map();
-  const parts = lootText
-    .split(/,|\s+and\s+|\s+e\s+/i)
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  for (const part of parts) {
-    const cleanedPart = part.replace(/[.]+$/g, "").trim();
-    const match = cleanedPart.match(/^(\d+)\s+(.+)$/);
-    const quantity = match ? Number.parseInt(match[1], 10) : 1;
-    const itemName = (match ? match[2] : cleanedPart).replace(/^(a|an)\s+/i, "");
-    const drop = boss.drops
-      ? getKnownDropByItem(itemName, boss.drops)
-      : getKnownLootDropByItem(itemName) ?? toGenericDrop(itemName);
-
-    if (!drop || !Number.isInteger(quantity) || quantity <= 0) {
-      continue;
-    }
-
-    totals.set(drop.id, {
-      drop,
-      quantity: (totals.get(drop.id)?.quantity ?? 0) + quantity
-    });
-  }
-
-  return Array.from(totals.values());
 }
 
 function parsePosition(value) {
@@ -896,8 +594,9 @@ client.on("interactionCreate", async (interaction) => {
 
       const position = parsePosition(positionText);
       const selectedDrop = interaction.values[0];
+      const selectedBoss = getLootBoss(selectedDrop);
 
-      if (kind === "boss-loot" && position && lootBosses[selectedDrop]) {
+      if (kind === "boss-loot" && position && selectedBoss) {
         await interaction.showModal(createLootPasteModal(position, selectedDrop));
         return;
       }
@@ -944,7 +643,7 @@ client.on("interactionCreate", async (interaction) => {
         const idParts = interaction.customId.split(":");
         const bossKey = idParts[0] === "loot-paste" ? idParts[1] : "necrolune";
         const positionText = idParts[0] === "loot-paste" ? idParts[2] : idParts[1];
-        const boss = lootBosses[bossKey] ?? lootBosses.necrolune;
+        const boss = getLootBoss(bossKey) ?? getLootBoss("necrolune");
         const position = parsePosition(positionText);
 
         if (!position) {
