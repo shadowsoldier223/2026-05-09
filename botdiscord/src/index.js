@@ -38,16 +38,31 @@ const client = new Client({
 });
 
 const necroluneDrops = [
-  { id: "crystal-coins", item: "crystal coins", category: "Comum" },
-  { id: "silver-token", item: "silver token", category: "Comum" },
-  { id: "gold-token", item: "gold token", category: "Comum" },
-  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum" },
-  { id: "mystic-mag", item: "mystic mag", category: "Semi-raro" },
-  { id: "mini-obelisk", item: "mini obelisk", category: "Semi-raro" },
-  { id: "serene-backpack", item: "serene backpack", category: "Raro" },
-  { id: "plushie-of-necrolune", item: "plushie of necrolune", category: "Raro" },
-  { id: "03-birthday-cupcake", item: "03's birthday cupcake", category: "Raro" },
-  { id: "eclipse-infusion-core", item: "Eclipse Infusion Core", category: "Muito raro" }
+  { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
+  { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
+  { id: "gold-token", item: "gold token", category: "Comum", aliases: ["gold tokens"] },
+  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
+  { id: "mystic-mag", item: "mystic mag", category: "Semi-raro", aliases: ["mystic mags"] },
+  { id: "mini-obelisk", item: "mini obelisk", category: "Semi-raro", aliases: ["mini obelisks"] },
+  { id: "serene-backpack", item: "serene backpack", category: "Raro", aliases: ["serene backpacks"] },
+  {
+    id: "plushie-of-necrolune",
+    item: "plushie of necrolune",
+    category: "Raro",
+    aliases: ["plushie of a Necrolune", "plushie of Necrolune"]
+  },
+  {
+    id: "03-birthday-cupcake",
+    item: "03's birthday cupcake",
+    category: "Raro",
+    aliases: ["03s birthday cupcake", "03 birthday cupcake"]
+  },
+  {
+    id: "eclipse-infusion-core",
+    item: "Eclipse Infusion Core",
+    category: "Muito raro",
+    aliases: ["Eclipse Infusion Cores"]
+  }
 ];
 
 const playerCharacters = [
@@ -80,7 +95,7 @@ function getNecroluneDropByItem(itemName) {
   const normalizedItem = normalizeLootText(itemName);
 
   return necroluneDrops.find((drop) =>
-    getDropAliases(drop.item).some((alias) => normalizeLootText(alias) === normalizedItem)
+    getDropAliases(drop).some((alias) => normalizeLootText(alias) === normalizedItem)
   ) ?? null;
 }
 
@@ -245,6 +260,7 @@ function createNecrolunePasteModal(position) {
 function normalizeLootText(value) {
   return value
     .toLowerCase()
+    .replace(/['’]/g, "")
     .replace(/\b(a|an)\b/g, " ")
     .replace(/[.,;:]/g, "")
     .replace(/\s+/g, " ")
@@ -298,14 +314,15 @@ function getEarliestDate(dates) {
   );
 }
 
-function getDropAliases(item) {
-  const aliases = [item];
+function getDropAliases(drop) {
+  const item = drop.item;
+  const aliases = [item, ...(drop.aliases ?? [])];
 
   if (item.endsWith("s")) {
     aliases.push(item.slice(0, -1));
   }
 
-  if (item.endsWith(" token") || item.endsWith(" coin")) {
+  if (!item.endsWith("s")) {
     aliases.push(`${item}s`);
   }
 
