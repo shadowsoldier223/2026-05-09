@@ -3,6 +3,7 @@ const path = require("node:path");
 
 const dataDir = path.join(__dirname, "..", "data");
 const dbPath = path.join(dataDir, "bosses.json");
+const backupsDir = path.join(dataDir, "backups");
 
 const emptyDb = {
   bosses: [],
@@ -63,6 +64,19 @@ function writeDb(db) {
   fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 }
 
+function backupLoots(db, reason = "loot") {
+  ensureDb();
+
+  if (!fs.existsSync(backupsDir)) {
+    fs.mkdirSync(backupsDir, { recursive: true });
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupPath = path.join(backupsDir, `${timestamp}-${reason}.json`);
+  fs.writeFileSync(backupPath, JSON.stringify(db, null, 2));
+  return backupPath;
+}
+
 function nextId(items) {
   return items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
 }
@@ -103,6 +117,7 @@ function addDrop({ bossId, player, item, quantity, value, category, createdBy })
   };
 
   db.drops.push(drop);
+  backupLoots(db, "drop");
   writeDb(db);
   return drop;
 }
@@ -150,6 +165,7 @@ function saveDuoLoot({ position, bossId = null, bossName = null, drops, createdB
   }));
 
   db.drops.push(...savedDrops);
+  backupLoots(db, "duo-loot");
   writeDb(db);
   return { boss, dailyDuos, drops: savedDrops };
 }
@@ -253,6 +269,70 @@ function getPlayerLootTotals(players) {
   }));
 }
 
+function getItemLootStats(itemName) {
+  const db = readDb();
+  const normalizedItem = itemName.toLowerCase().trim();
+  const matchingDrops = db.drops.filter((drop) => drop.item.toLowerCase() === normalizedItem);
+  const players = new Map();
+  let total = 0;
+
+  for (const drop of matchingDrops) {
+    total += drop.quantity;
+    players.set(drop.player, (players.get(drop.player) ?? 0) + drop.quantity);
+  }
+
+  return {
+    item: itemName,
+    total,
+    players: Array.from(players.entries())
+      .map(([player, quantity]) => ({ player, quantity }))
+      .sort((a, b) => b.quantity - a.quantity)
+  };
+}
+
+function getCharacterLootTotals() {
+  const db = readDb();
+  const totalsByCharacter = new Map();
+
+  for (const drop of db.drops) {
+    const totals = totalsByCharacter.get(drop.player) ?? new Map();
+    const current = totals.get(drop.item) ?? {
+      item: drop.item,
+      quantity: 0
+    };
+
+    current.quantity += drop.quantity;
+    totals.set(drop.item, current);
+    totalsByCharacter.set(drop.player, totals);
+  }
+
+  return Array.from(totalsByCharacter.entries())
+    .map(([player, totals]) => ({
+      player,
+      totals: Array.from(totals.values()).sort((a, b) => b.quantity - a.quantity)
+    }))
+    .sort((a, b) => a.player.localeCompare(b.player, "pt-BR"));
+}
+
+function undoLastLoot() {
+  const db = readDb();
+
+  if (!db.drops.length) {
+    return null;
+  }
+
+  backupLoots(db, "before-undo-loot");
+  const lastCreatedAt = db.drops.reduce((latest, drop) =>
+    drop.createdAt > latest ? drop.createdAt : latest,
+    db.drops[0].createdAt
+  );
+  const removed = db.drops.filter((drop) => drop.createdAt === lastCreatedAt);
+  db.drops = db.drops.filter((drop) => drop.createdAt !== lastCreatedAt);
+  backupLoots(db, "undo-loot");
+  writeDb(db);
+  return removed;
+}
+
 function getDailyDuos() {
   return readDb().dailyDuos;
 }
@@ -340,7 +420,9 @@ module.exports = {
   createBoss,
   editDailyDuo,
   getBossSummary,
+  getCharacterLootTotals,
   getDailyDuos,
+  getItemLootStats,
   getLootTotals,
   getPlayerLootTotals,
   getPlayerStacks,
@@ -348,5 +430,6 @@ module.exports = {
   removeDailyDuo,
   resetDailyDuos,
   saveDuoLoot,
-  setDailyDuoStatus
+  setDailyDuoStatus,
+  undoLastLoot
 };

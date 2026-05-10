@@ -96,7 +96,33 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName("loot")
-    .setDescription("Mostra o total de drops por item."),
+    .setDescription("Consulta e corrige loots.")
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("geral")
+        .setDescription("Mostra o total de drops por item.")
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("item")
+        .setDescription("Mostra quem dropou mais um item.")
+        .addStringOption((option) =>
+          option
+            .setName("nome")
+            .setDescription("Nome do item.")
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("chars")
+        .setDescription("Mostra o total de loot por character.")
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("desfazer")
+        .setDescription("Remove o ultimo loot salvo.")
+    ),
 
   new SlashCommandBuilder()
     .setName("stacks")
@@ -122,6 +148,16 @@ const commands = [
           subcommand
             .setName("enviar")
             .setDescription("Envia a lista diaria agora.")
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("prontos")
+            .setDescription("Mostra os duos que ja sairam do cooldown.")
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName("cooldown")
+            .setDescription("Mostra os duos ainda em cooldown.")
         )
     )
     .addSubcommandGroup((group) =>

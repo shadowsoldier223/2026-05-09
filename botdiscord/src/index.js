@@ -18,7 +18,9 @@ const {
   createBoss,
   editDailyDuo,
   getBossSummary,
+  getCharacterLootTotals,
   getDailyDuos,
+  getItemLootStats,
   getLootTotals,
   getPlayerLootTotals,
   getPlayerStacks,
@@ -26,7 +28,8 @@ const {
   removeDailyDuo,
   resetDailyDuos,
   saveDuoLoot,
-  setDailyDuoStatus
+  setDailyDuoStatus,
+  undoLastLoot
 } = require("./storage");
 const { formatDailyDuos, formatDate, formatGold, trimDiscord } = require("./format");
 
@@ -155,6 +158,26 @@ function createDuoPanelComponents() {
             label: "Ver total de loots",
             description: "Mostra o total geral por dono",
             value: "loot-total"
+          },
+          {
+            label: "Ver total por char",
+            description: "Mostra o total de drops por character",
+            value: "loot-chars"
+          },
+          {
+            label: "Desfazer ultimo loot",
+            description: "Remove o ultimo envio de loot salvo",
+            value: "undo-loot"
+          },
+          {
+            label: "Duos prontos",
+            description: "Mostra quem ja saiu do cooldown",
+            value: "duo-ready"
+          },
+          {
+            label: "Duos em cooldown",
+            description: "Mostra quanto falta para liberar",
+            value: "duo-cooldown"
           }
         )
     )
@@ -466,6 +489,88 @@ function formatAllOwnerLootTotals() {
   );
 }
 
+function formatItemLootStats(itemName) {
+  const drop = getNecroluneDropByItem(itemName);
+  const stats = getItemLootStats(drop?.item ?? itemName);
+
+  if (!stats.total) {
+    return `Nenhum drop encontrado para **${itemName}**.`;
+  }
+
+  const lines = stats.players.map((entry, index) =>
+    `${index + 1}. **${entry.player}**: ${entry.quantity}x`
+  );
+
+  return `**${stats.item}**\nTotal: **${stats.total}x**\n\n${lines.join("\n")}`;
+}
+
+function formatCharacterLootTotals() {
+  const characters = getCharacterLootTotals();
+
+  if (!characters.length) {
+    return "Ainda nao tem drops registrados.";
+  }
+
+  const lines = characters.flatMap((character) => [
+    `**${character.player}**`,
+    ...character.totals.slice(0, 25).map((total) => `- ${total.item}: ${total.quantity}x`)
+  ]);
+
+  return `**Total por character**\n${lines.join("\n")}`;
+}
+
+function formatUndoLootResult(removedDrops) {
+  if (!removedDrops?.length) {
+    return "Nao tem loot salvo para desfazer.";
+  }
+
+  const lines = removedDrops.map((drop) =>
+    `- ${drop.player}: ${drop.quantity}x ${drop.item}`
+  );
+
+  return `Ultimo loot removido:\n${lines.join("\n")}`;
+}
+
+function getReadyDuos(duos) {
+  const now = Date.now();
+
+  return duos
+    .map((duo, index) => ({ ...duo, position: index + 1 }))
+    .filter((duo) => !duo.cooldownUntil || new Date(duo.cooldownUntil).getTime() <= now);
+}
+
+function getCooldownDuos(duos) {
+  const now = Date.now();
+
+  return duos
+    .map((duo, index) => ({ ...duo, position: index + 1 }))
+    .filter((duo) => duo.cooldownUntil && new Date(duo.cooldownUntil).getTime() > now);
+}
+
+function formatReadyDuos() {
+  const ready = getReadyDuos(getDailyDuos());
+
+  if (!ready.length) {
+    return "Nenhum duo pronto agora.";
+  }
+
+  return `**Duos prontos**\n${ready
+    .map((duo) => `${duo.position}. **${duo.left}** + **${duo.right}**`)
+    .join("\n")}`;
+}
+
+function formatCooldownDuos() {
+  const cooldowns = getCooldownDuos(getDailyDuos());
+
+  if (!cooldowns.length) {
+    return "Nenhum duo em cooldown agora.";
+  }
+
+  return `**Duos em cooldown**\n${cooldowns
+    .map((duo) => `${duo.position}. **${duo.left}** + **${duo.right}** libera ${formatTime(duo.cooldownUntil)}`)
+    .join("\n")}`;
+}
+
 process.once("exit", (code) => {
   console.log(`Processo encerrado com codigo ${code}.`);
 });
@@ -525,6 +630,38 @@ client.on("interactionCreate", async (interaction) => {
         if (action === "loot-total") {
           await interaction.reply({
             content: trimDiscord(formatAllOwnerLootTotals()),
+            components: createDuoPanelComponents()
+          });
+          return;
+        }
+
+        if (action === "loot-chars") {
+          await interaction.reply({
+            content: trimDiscord(formatCharacterLootTotals()),
+            components: createDuoPanelComponents()
+          });
+          return;
+        }
+
+        if (action === "undo-loot") {
+          await interaction.reply({
+            content: trimDiscord(formatUndoLootResult(undoLastLoot())),
+            components: createDuoPanelComponents()
+          });
+          return;
+        }
+
+        if (action === "duo-ready") {
+          await interaction.reply({
+            content: trimDiscord(formatReadyDuos()),
+            components: createDuoPanelComponents()
+          });
+          return;
+        }
+
+        if (action === "duo-cooldown") {
+          await interaction.reply({
+            content: trimDiscord(formatCooldownDuos()),
             components: createDuoPanelComponents()
           });
           return;
@@ -828,16 +965,37 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     if (interaction.commandName === "loot") {
-      const totals = getLootTotals();
-      const text = totals.length
-        ? totals
-            .slice(0, 25)
-            .map((entry) => `- ${entry.item}: ${entry.quantity}x | ${formatGold(entry.value)}`)
-            .join("\n")
-        : "Ainda nao tem drops registrados.";
+      const subcommand = interaction.options.getSubcommand();
 
-      await interaction.reply(trimDiscord(`**Loot geral**\n${text}`));
-      return;
+      if (subcommand === "geral") {
+        const totals = getLootTotals();
+        const text = totals.length
+          ? totals
+              .slice(0, 25)
+              .map((entry) => `- ${entry.item}: ${entry.quantity}x | ${formatGold(entry.value)}`)
+              .join("\n")
+          : "Ainda nao tem drops registrados.";
+
+        await interaction.reply(trimDiscord(`**Loot geral**\n${text}`));
+        return;
+      }
+
+      if (subcommand === "item") {
+        await interaction.reply(
+          trimDiscord(formatItemLootStats(interaction.options.getString("nome", true)))
+        );
+        return;
+      }
+
+      if (subcommand === "chars") {
+        await interaction.reply(trimDiscord(formatCharacterLootTotals()));
+        return;
+      }
+
+      if (subcommand === "desfazer") {
+        await interaction.reply(trimDiscord(formatUndoLootResult(undoLastLoot())));
+        return;
+      }
     }
 
     if (interaction.commandName === "stacks") {
@@ -877,6 +1035,22 @@ client.on("interactionCreate", async (interaction) => {
         const duos = resetDailyDuos();
         await interaction.reply({
           content: trimDiscord(formatDailyDuos(duos)),
+          components: createDuoPanelComponents()
+        });
+        return;
+      }
+
+      if (group === "lista" && subcommand === "prontos") {
+        await interaction.reply({
+          content: trimDiscord(formatReadyDuos()),
+          components: createDuoPanelComponents()
+        });
+        return;
+      }
+
+      if (group === "lista" && subcommand === "cooldown") {
+        await interaction.reply({
+          content: trimDiscord(formatCooldownDuos()),
           components: createDuoPanelComponents()
         });
         return;
