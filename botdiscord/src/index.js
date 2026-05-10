@@ -69,6 +69,43 @@ const necroluneDrops = [
   }
 ];
 
+const nocturniaCrescentMoonDrops = [
+  { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
+  { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
+  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
+  {
+    id: "powerful-cloud-fabric-scroll",
+    item: "Powerful Cloud Fabric Scroll",
+    category: "Semi-raro",
+    aliases: ["Powerful Cloud Fabric Scrolls"]
+  },
+  {
+    id: "powerful-electrify-scroll",
+    item: "Powerful Electrify Scroll",
+    category: "Semi-raro",
+    aliases: ["Powerful Electrify Scrolls"]
+  },
+  { id: "roulette-coin", item: "Roulette Coin", category: "Semi-raro", aliases: ["Roulette Coins"] },
+  {
+    id: "03-birthday-cupcake",
+    item: "03's birthday cupcake",
+    category: "Raro",
+    aliases: ["03s birthday cupcake", "03 birthday cupcake"]
+  },
+  {
+    id: "boosted-exercise-present",
+    item: "Boosted Exercise Present",
+    category: "Raro",
+    aliases: ["Boosted Exercise Presents"]
+  },
+  {
+    id: "03-birthday-cake",
+    item: "03's birthday cake",
+    category: "Muito raro",
+    aliases: ["03s birthday cake", "03 birthday cake"]
+  }
+];
+
 const nocturniaHalfMoonDrops = [
   { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
   { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
@@ -112,12 +149,73 @@ const nocturniaHalfMoonDrops = [
     aliases: ["Boosted Exercise Presents"]
   },
   { id: "merciless-backpack", item: "Merciless Backpack", category: "Muito raro", aliases: ["Merciless Backpacks"] },
-  { id: "eclypse-catalyst", item: "Eclypse Catalyst", category: "Muito raro", aliases: ["Eclipse Catalyst", "Eclypse Catalysts"] },
+  { id: "eclipse-catalyst", item: "Eclipse Catalyst", category: "Muito raro", aliases: ["Eclypse Catalyst", "Eclypse Catalysts"] },
   {
     id: "unlit-crescent-crystal",
     item: "Unlit Crescent Crystal",
     category: "Muito raro",
     aliases: ["Unlit Crescent Crystals"]
+  }
+];
+
+const nocturniaFullMoonDrops = [
+  { id: "crystal-coins", item: "crystal coins", category: "Comum", aliases: ["crystal coin"] },
+  { id: "silver-token", item: "silver token", category: "Comum", aliases: ["silver tokens"] },
+  { id: "gold-token", item: "gold token", category: "Comum", aliases: ["gold tokens"] },
+  { id: "nocturnia-coin", item: "nocturnia coin", category: "Comum", aliases: ["nocturnia coins"] },
+  {
+    id: "powerful-cloud-fabric-scroll",
+    item: "Powerful Cloud Fabric Scroll",
+    category: "Semi-raro",
+    aliases: ["Powerful Cloud Fabric Scrolls"]
+  },
+  {
+    id: "powerful-electrify-scroll",
+    item: "Powerful Electrify Scroll",
+    category: "Semi-raro",
+    aliases: ["Powerful Electrify Scrolls"]
+  },
+  {
+    id: "advanced-promotion-scroll",
+    item: "Advanced Promotion Scroll",
+    category: "Semi-raro",
+    aliases: ["Advanced Promotion Scrolls"]
+  },
+  { id: "roulette-coin", item: "Roulette Coin", category: "Semi-raro", aliases: ["Roulette Coins"] },
+  {
+    id: "boosted-exercise-present",
+    item: "Boosted Exercise Present",
+    category: "Semi-raro",
+    aliases: ["Boosted Exercise Presents"]
+  },
+  {
+    id: "03-birthday-cupcake",
+    item: "03's birthday cupcake",
+    category: "Raro",
+    aliases: ["03s birthday cupcake", "03 birthday cupcake"]
+  },
+  {
+    id: "03-birthday-cake",
+    item: "03's birthday cake",
+    category: "Raro",
+    aliases: ["03s birthday cake", "03 birthday cake"]
+  },
+  { id: "mini-obelisk", item: "mini obelisk", category: "Raro", aliases: ["mini obelisks"] },
+  { id: "stone-of-ascension", item: "Stone of Ascension", category: "Raro", aliases: ["Stones of Ascension"] },
+  { id: "soul-core-bag", item: "Soul Core Bag", category: "Raro", aliases: ["Soul Core Bags"] },
+  { id: "merciless-backpack", item: "Merciless Backpack", category: "Muito raro", aliases: ["Merciless Backpacks"] },
+  { id: "eclipse-catalyst", item: "Eclipse Catalyst", category: "Muito raro", aliases: ["Eclypse Catalyst", "Eclypse Catalysts"] },
+  {
+    id: "unlit-crescent-crystal",
+    item: "Unlit Crescent Crystal",
+    category: "Muito raro",
+    aliases: ["Unlit Crescent Crystals"]
+  },
+  {
+    id: "23-nocturnia-rubini",
+    item: "#23 Nocturnia Rubini",
+    category: "Unico",
+    aliases: ["23 Nocturnia Rubini", "Nocturnia Rubini"]
   }
 ];
 
@@ -127,10 +225,20 @@ const lootBosses = {
     bossName: "necrolune",
     drops: necroluneDrops
   },
+  nocturniaCrescentMoon: {
+    label: "Nocturnia - Crescent Moon",
+    bossName: "nocturnia",
+    drops: nocturniaCrescentMoonDrops
+  },
   nocturniaHalfMoon: {
     label: "Nocturnia - Half Moon",
     bossName: "nocturnia",
     drops: nocturniaHalfMoonDrops
+  },
+  nocturniaFullMoon: {
+    label: "Nocturnia - Full Moon",
+    bossName: "nocturnia",
+    drops: nocturniaFullMoonDrops
   }
 };
 
