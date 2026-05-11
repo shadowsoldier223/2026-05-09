@@ -158,7 +158,7 @@ function createBossLootComponents(position) {
     new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId(`boss-loot:${position}`)
-        .setPlaceholder("Escolha o boss do loot")
+        .setPlaceholder("Enviar loot do boss")
         .addOptions(
           ...duoBosses.map((boss) => ({
             label: boss.label,
