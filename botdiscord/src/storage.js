@@ -4,10 +4,12 @@ const path = require("node:path");
 const dataDir = path.join(__dirname, "..", "data");
 const dbPath = path.join(dataDir, "bosses.json");
 const backupsDir = path.join(dataDir, "backups");
+const duoCooldownMs = 20 * 60 * 60 * 1000;
 
 const emptyDb = {
   bosses: [],
   drops: [],
+  duoHistory: [],
   config: {
     duosChannelId: null,
     lastDuosPostDate: null
@@ -46,6 +48,7 @@ function readDb() {
       ...emptyDb.config,
       ...(db.config ?? {})
     },
+    duoHistory: db.duoHistory ?? [],
     dailyDuos: db.dailyDuos?.length
       ? db.dailyDuos.map((duo) => ({
           ...duo,
@@ -79,6 +82,120 @@ function backupLoots(db, reason = "loot") {
 
 function nextId(items) {
   return items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+}
+
+function normalizeDuoName(value) {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function getDuoKey(left, right) {
+  return [normalizeDuoName(left), normalizeDuoName(right)].sort().join(" + ");
+}
+
+function buildDuoCooldown(duo, status, markedAt) {
+  const markedDate = new Date(markedAt);
+
+  return {
+    ...duo,
+    status,
+    markedAt: markedDate.toISOString(),
+    cooldownUntil: new Date(markedDate.getTime() + duoCooldownMs).toISOString()
+  };
+}
+
+function recordDuoHistory(db, position, status, markedAt) {
+  const duo = db.dailyDuos[position - 1];
+
+  if (!duo) {
+    return null;
+  }
+
+  const markedDate = new Date(markedAt);
+  const entry = {
+    id: nextId(db.duoHistory),
+    position,
+    left: duo.left,
+    right: duo.right,
+    duoKey: getDuoKey(duo.left, duo.right),
+    status,
+    markedAt: markedDate.toISOString(),
+    cooldownUntil: new Date(markedDate.getTime() + duoCooldownMs).toISOString(),
+    createdAt: new Date().toISOString()
+  };
+
+  db.duoHistory.push(entry);
+  return entry;
+}
+
+function getHistorySortTime(entry) {
+  return new Date(entry.createdAt ?? entry.markedAt ?? 0).getTime();
+}
+
+function getLatestDuoHistory(db) {
+  const latestByKey = new Map();
+  const necroluneBossIds = new Set(
+    db.bosses
+      .filter((boss) => boss.name.toLowerCase() === "necrolune")
+      .map((boss) => boss.id)
+  );
+  const currentDailyMarks = db.dailyDuos
+    .map((duo, index) => duo.markedAt
+      ? {
+          position: index + 1,
+          left: duo.left,
+          right: duo.right,
+          duoKey: getDuoKey(duo.left, duo.right),
+          status: duo.status,
+          markedAt: duo.markedAt,
+          cooldownUntil: duo.cooldownUntil,
+          createdAt: duo.markedAt
+        }
+      : null)
+    .filter(Boolean);
+
+  for (const entry of [...db.duoHistory, ...currentDailyMarks]) {
+    const key = entry.duoKey ?? getDuoKey(entry.left, entry.right);
+    const current = latestByKey.get(key);
+
+    if (!current || getHistorySortTime(entry) > getHistorySortTime(current)) {
+      latestByKey.set(key, entry);
+    }
+  }
+
+  for (const [index, duo] of db.dailyDuos.entries()) {
+    const key = getDuoKey(duo.left, duo.right);
+    const players = new Set([normalizeDuoName(duo.left), normalizeDuoName(duo.right)]);
+    const latestDrop = db.drops
+      .filter((drop) =>
+        necroluneBossIds.has(drop.bossId) &&
+        players.has(normalizeDuoName(drop.player)) &&
+        drop.createdAt
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+    if (!latestDrop) {
+      continue;
+    }
+
+    const markedAt = latestDrop.markedAt ?? latestDrop.createdAt;
+    const fallbackEntry = {
+      position: index + 1,
+      left: duo.left,
+      right: duo.right,
+      duoKey: key,
+      status: "done",
+      markedAt,
+      cooldownUntil: new Date(new Date(markedAt).getTime() + duoCooldownMs).toISOString(),
+      createdAt: latestDrop.createdAt
+    };
+    const current = latestByKey.get(key);
+
+    if (!current || getHistorySortTime(fallbackEntry) > getHistorySortTime(current)) {
+      latestByKey.set(key, fallbackEntry);
+    }
+  }
+
+  return latestByKey;
 }
 
 function findBoss(db, { bossId = null, bossName = null }) {
@@ -144,14 +261,8 @@ function saveDuoLoot({ position, bossId = null, bossName = null, drops, createdB
   let dailyDuos = null;
 
   if (markedAt && db.dailyDuos[index]) {
-    const markedDate = new Date(markedAt);
-
-    db.dailyDuos[index] = {
-      ...db.dailyDuos[index],
-      status: "done",
-      markedAt: markedDate.toISOString(),
-      cooldownUntil: new Date(markedDate.getTime() + 20 * 60 * 60 * 1000).toISOString()
-    };
+    db.dailyDuos[index] = buildDuoCooldown(db.dailyDuos[index], "done", markedAt);
+    recordDuoHistory(db, position, "done", markedAt);
     dailyDuos = db.dailyDuos;
   }
 
@@ -166,7 +277,8 @@ function saveDuoLoot({ position, bossId = null, bossName = null, drops, createdB
     value: drop.value ?? 0,
     category: drop.category,
     createdBy,
-    createdAt
+    createdAt,
+    ...(markedAt ? { markedAt: new Date(markedAt).toISOString() } : {})
   }));
 
   db.drops.push(...savedDrops);
@@ -375,6 +487,26 @@ function getDailyDuos() {
   return readDb().dailyDuos;
 }
 
+function getDailyDuosWithCooldowns() {
+  const db = readDb();
+  const latestByKey = getLatestDuoHistory(db);
+
+  return db.dailyDuos.map((duo) => {
+    const latest = latestByKey.get(getDuoKey(duo.left, duo.right));
+
+    if (!latest) {
+      return duo;
+    }
+
+    return {
+      ...duo,
+      status: latest.status ?? null,
+      markedAt: latest.markedAt ?? null,
+      cooldownUntil: latest.cooldownUntil ?? null
+    };
+  });
+}
+
 function addDailyDuo(left, right) {
   const db = readDb();
   db.dailyDuos.push({ left, right, status: null, markedAt: null, cooldownUntil: null });
@@ -428,12 +560,8 @@ function setDailyDuoStatus(position, status, markedAt = new Date()) {
     return null;
   }
 
-  db.dailyDuos[index] = {
-    ...db.dailyDuos[index],
-    status,
-    markedAt: markedDate.toISOString(),
-    cooldownUntil: new Date(markedDate.getTime() + 20 * 60 * 60 * 1000).toISOString()
-  };
+  db.dailyDuos[index] = buildDuoCooldown(db.dailyDuos[index], status, markedDate);
+  recordDuoHistory(db, position, status, markedDate);
   writeDb(db);
   return db.dailyDuos;
 }
@@ -460,6 +588,7 @@ module.exports = {
   getBossSummary,
   getCharacterLootTotals,
   getDailyDuos,
+  getDailyDuosWithCooldowns,
   getItemLootStats,
   getLootTotals,
   getPlayerLootTotals,

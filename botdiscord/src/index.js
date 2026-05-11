@@ -21,6 +21,7 @@ const {
   getBossSummary,
   getCharacterLootTotals,
   getDailyDuos,
+  getDailyDuosWithCooldowns,
   getItemLootStats,
   getLootTotals,
   getPlayerLootTotals,
@@ -506,8 +507,27 @@ function getCooldownDuos(duos) {
     .filter((duo) => duo.cooldownUntil && new Date(duo.cooldownUntil).getTime() > now);
 }
 
+function formatRemainingTime(isoDate) {
+  const totalMinutes = Math.max(0, Math.ceil((new Date(isoDate).getTime() - Date.now()) / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (!hours) {
+    return `${minutes}min`;
+  }
+
+  return `${hours}h ${minutes}min`;
+}
+
+function formatDuoStatus(status) {
+  return {
+    done: "OK",
+    fail: "fail"
+  }[status] ?? "marcado";
+}
+
 function formatReadyDuos() {
-  const ready = getReadyDuos(getDailyDuos());
+  const ready = getReadyDuos(getDailyDuosWithCooldowns());
 
   if (!ready.length) {
     return "Nenhum duo pronto agora.";
@@ -519,14 +539,18 @@ function formatReadyDuos() {
 }
 
 function formatCooldownDuos() {
-  const cooldowns = getCooldownDuos(getDailyDuos());
+  const cooldowns = getCooldownDuos(getDailyDuosWithCooldowns());
 
   if (!cooldowns.length) {
     return "Nenhum duo em cooldown agora.";
   }
 
   return `**Duos em cooldown**\n${cooldowns
-    .map((duo) => `${duo.position}. **${duo.left}** + **${duo.right}** libera ${formatTime(duo.cooldownUntil)}`)
+    .map((duo) =>
+      `${duo.position}. **${duo.left}** + **${duo.right}** ` +
+        `${formatDuoStatus(duo.status)} ${formatTime(duo.markedAt)} // ` +
+        `libera ${formatTime(duo.cooldownUntil)} (${formatRemainingTime(duo.cooldownUntil)})`
+    )
     .join("\n")}`;
 }
 
